@@ -78,6 +78,8 @@ Cesium 性能优化实验，解决集成显卡拖拽卡顿问题。
 - Billboard 用 Canvas 画图代替 3D 几何体，零 GPU 负担
 - 关掉光照/雾/HDR/抗锯齿，不影响数据展示但省 GPU
 
+> 📖 **深度阅读：** [Primitive 定位原理详解](notes/cesium/Primitive-Positioning.md) — 为什么 Entity 只需要 `position`，Primitive 却要 `modelMatrix` + `eastNorthUpToFixedFrame`，看完就懂。
+
 ---
 
 ## 启动方式

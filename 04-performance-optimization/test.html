@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-    <title>优化方案03 — Primitive Instancing 3D 柱子</title>
+    <title>GDP 柱状图</title>
 </head>
 <body>
     <div id="cesiumcontainer"></div>
@@ -14,39 +14,44 @@
         Cesium.Ion.defaultAccessToken = (await res.text()).trim();
 
         const viewer = new Cesium.Viewer('cesiumcontainer', {
+            // 隐藏天空和大气
             skyAtmosphere: false,
+            // 隐藏场景模式选择器
             sceneModePicker: false,
+            // 隐藏基础图层选择器
             baseLayerPicker: false,
         })
+        //  {
+        //     terrain: Cesium.Terrain.fromWorldTerrain(),
+        // });
 
         viewer.camera.flyTo({
             destination: Cesium.Cartesian3.fromDegrees(110, 35, 8000000),
         });
 
+        // 关闭光照
         viewer.scene.globe.enableLighting = false;
+        // 关闭雾
         viewer.scene.fog.enabled = false;
-        viewer.scene.fxaa = false;
+        // 关闭抗锯齿
+        viewer.scene.fxaa=false;
 
         const res01 = await fetch('china-gdp.json')
         const gdp = await res01.json()
-
-        // ====== 柱子：Primitive Instancing（1 个 draw call）======
         const instances = gdp.map(cities => {
             const h = cities.gdp * 20
             const w = 80000
 
             const center = Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h / 2)
-            // 柱子位置
             const transform = Cesium.Transforms.eastNorthUpToFixedFrame(center)
 
             return new Cesium.GeometryInstance({
                 geometry: new Cesium.BoxGeometry({
-                    //
                     vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL,
-                    maximum: new Cesium.Cartesian3(w / 2, w / 2, h / 2),
-                    minimum: new Cesium.Cartesian3(-w / 2, -w / 2, -h / 2),
+                    minimum: new Cesium.Cartesian3(-w/2, -w/2, -h/2),
+                    maximum: new Cesium.Cartesian3(w/2, w/2, h/2),
                 }),
-                modelMatrix: transform,
+                modelMatrix: transform
             })
         })
 
@@ -54,11 +59,11 @@
             geometryInstances: instances,
             appearance: new Cesium.PerInstanceColorAppearance({
                 closed: true,
-                translucent: false,
-            }),
+                translucent: false
+            })
         }))
 
-        // ====== 标签：Entity（文字不支持 Primitive）======
+        // 标签（柱子顶）
         gdp.forEach(cities => {
             const h = cities.gdp * 20
             viewer.entities.add({
@@ -74,7 +79,8 @@
             })
         })
 
-        viewer.scene.debugShowFramesPerSecond = true;
+        viewer.scene.debugShowFramesPerSecond = true
+
 
     </script>
 </body>

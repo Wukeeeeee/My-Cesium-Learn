@@ -4,6 +4,36 @@
 
 ---
 
+## 完整 HTML 模板（抄作业用）
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Cesium CDN -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <title>Cesium 项目</title>
+</head>
+<body>
+    <div id="cesiumcontainer"></div>
+    <script type="module">
+        // 1. API Key
+        const res = await fetch('apikey.txt');
+        Cesium.Ion.defaultAccessToken = (await res.text()).trim();
+
+        // 2. 创建地球
+        const viewer = new Cesium.Viewer('cesiumcontainer');
+
+        // 3. 写你的代码在这里...
+    </script>
+</body>
+</html>
+```
+
+---
+
 ## Viewer — 创建 3D 地球
 
 ```js
@@ -300,6 +330,175 @@ const text = await res.text();      // 读 txt 文件
 | `res.json()` | 解析成 JSON 对象（数组/字典） |
 | `res.text()` | 解析成纯文本字符串 |
 | `.trim()` | 去掉首尾空格/换行 |
+
+---
+
+## 完整模板：JSON 数据加载 + 批量添加实体
+
+这是 01-04 项目都在用的核心模式：加载外部 JSON → 循环 → 在地球上画东西。
+
+```js
+// 1. 读 JSON 数据
+const res = await fetch('data.json');
+const data = await res.json();
+
+// 2. forEach 循环批量加实体
+data.forEach(item => {
+    viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(item.lon, item.lat, 0),
+        point: { pixelSize: 10, color: Cesium.Color.RED },
+        label: {
+            text: item.name,
+            font: '20px sans-serif',
+            color: Cesium.Color.WHITE,
+            verticalOrigin: Cesium.VerticalOrigin.TOP,
+            pixelOffset: new Cesium.Cartesian2(0, 10),
+        },
+    });
+});
+```
+
+**JSON 数据格式参考（`china-cities.json` / `china-gdp.json`）：**
+
+```json
+[
+  { "name": "广州", "lon": 113.27, "lat": 23.13, "gdp": 31000 },
+  { "name": "北京", "lon": 116.40, "lat": 39.90, "gdp": 49843 }
+]
+```
+
+---
+
+## Billboard（图片标注）— 2D 贴图替代 3D
+
+用 Canvas 画一张图作为 Billboard 贴到地球上，**比 3D Box 轻量几十倍**，适合集成显卡。
+
+```js
+// 用 canvas 画一个红色柱子图片
+const canvas = document.createElement('canvas');
+canvas.width = 64;
+canvas.height = 100;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#ff4444';
+ctx.fillRect(0, 0, 64, 100);
+
+viewer.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
+    billboard: {
+        image: canvas,           // ← Canvas 画好的图
+        scale: 1,
+        verticalOrigin: Cesium.VerticalOrigin.CENTER,
+    },
+});
+```
+
+| 属性 | 说明 |
+|------|------|
+| `image` | 图片 URL 或 Canvas 对象 |
+| `scale` | 缩放倍数 |
+| `verticalOrigin` | `TOP` / `CENTER` / `BOTTOM` |
+| `horizontalOrigin` | `LEFT` / `CENTER` / `RIGHT` |
+
+### 数据映射为柱子高度（Billboard 版）
+
+```js
+gdp.forEach(cities => {
+    const h = cities.gdp * 20
+
+    // 动态画不同高度的柱子
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = Math.max(h / 5000, 10);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ff4444';
+    ctx.fillRect(0, 0, 64, canvas.height);
+
+    viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h / 2),
+        billboard: {
+            image: canvas,
+            scale: 1,
+            verticalOrigin: Cesium.VerticalOrigin.CENTER,
+        },
+    });
+});
+```
+
+---
+
+## Point（点）— 散点图 / 数据分布
+
+最轻量的数据可视化方式，用点的大小或颜色表示数值。
+
+```js
+viewer.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(lon, lat, 0),
+    point: {
+        pixelSize: 20,                    // 点的大小（像素）
+        color: Cesium.Color.RED,          // 填充色
+        outlineColor: Cesium.Color.WHITE, // 边框色
+        outlineWidth: 1,                  // 边框粗细
+    },
+});
+```
+
+### 数据→点大小映射
+
+```js
+gdp.forEach(cities => {
+    viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, 0),
+        point: {
+            pixelSize: cities.gdp / 800,   // GDP 越高点越大
+            color: Cesium.Color.RED.withAlpha(0.8),
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 1,
+        },
+        label: {
+            text: cities.name + '\n' + cities.gdp + '亿',
+            font: '20px sans-serif',
+            color: Cesium.Color.WHITE,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        },
+    });
+});
+```
+
+---
+
+## Primitive Instancing — 批量 3D 几何体（高性能）
+
+把多个同类型几何体（如 Box）合并成**一个 draw call**，适合静态批量展示。
+
+原理见 `GeometryInstance` + `Primitive` 组合：
+
+```js
+// 1. 每个柱子一张"工单"
+const instances = data.map(item => {
+    const center = Cesium.Cartesian3.fromDegrees(item.lon, item.lat, h / 2);
+    const transform = Cesium.Transforms.eastNorthUpToFixedFrame(center);
+
+    return new Cesium.GeometryInstance({
+        geometry: new Cesium.BoxGeometry({
+            vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL,
+            maximum: new Cesium.Cartesian3(w / 2, w / 2, h / 2),
+            minimum: new Cesium.Cartesian3(-w / 2, -w / 2, -h / 2),
+        }),
+        modelMatrix: transform,
+    });
+});
+
+// 2. 所有工单一次性提交 GPU
+viewer.scene.primitives.add(new Cesium.Primitive({
+    geometryInstances: instances,
+    appearance: new Cesium.PerInstanceColorAppearance({
+        closed: true,
+        translucent: false,
+    }),
+}));
+```
+
+> **缺点：** 不支持文字标签（需另加 Entity label），不方便点选交互。适合静态展示。
 
 ---
 
