@@ -184,6 +184,80 @@ pixelOffset: new Cesium.Cartesian2(-20, 0)  // 往左移20像素
 
 ---
 
+## box（柱体 / 长方体）— 3D 柱状图
+
+```js
+viewer.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(lon, lat, 高度),
+    box: {
+        dimensions: new Cesium.Cartesian3(宽度, 深度, 高度),
+        material: Cesium.Color.RED
+    }
+})
+```
+
+| 属性 | 说明 |
+|------|------|
+| `dimensions` | `new Cesium.Cartesian3(宽, 深, 高)`，单位**米** |
+| `material` | 材质/颜色，如 `Cesium.Color.RED` |
+
+**注意：**
+- `position` 的第三个参数 + box 的高度共同决定柱子的视觉位置
+- 一般把 `position` 的高度设为 `h/2`（柱子半高），这样柱子**底部贴地**，往上生长
+- `dimensions` 的 x/y 控制柱子粗细，z 控制柱子高度
+
+### 示例：GDP 数据可视化
+
+```js
+const h = cities.gdp * 20       // 数据映射为高度
+const w = 80000                 // 柱子粗细
+
+viewer.entities.add({
+    position: Cartesian3.fromDegrees(cities.lon, cities.lat, h / 2),
+    box: {
+        dimensions: new Cartesian3(w, w, h),
+        material: Cesium.Color.RED
+    }
+});
+```
+
+### 技巧：柱子顶部加标签
+
+```js
+// 在柱子顶部单独加一个实体作为标签
+viewer.entities.add({
+    position: Cartesian3.fromDegrees(cities.lon, cities.lat, h + 1000),
+    label: {
+        text: cities.name + '\n' + cities.gdp + '亿',   // 多行文本用 \n
+        font: '20px sans-serif',
+        color: Cesium.Color.WHITE,
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        disableDepthTestDistance: 0,
+    }
+});
+```
+
+### 多行文本
+
+在 `label.text` 中用 `\n` 换行：
+
+```js
+text: cities.name + '\n' + cities.gdp + '亿'
+```
+
+### 数据驱动高度映射
+
+把数据（如 GDP）映射到视觉高度：
+
+| 公式 | 效果 |
+|------|------|
+| `h = gdp * 20` | 50000 亿 → 100 万米高 |
+| `h = gdp * 50` | 50000 亿 → 250 万米高 |
+| `position 高度 = h / 2` | 柱子底部贴地 |
+| `label 高度 = h + 1000` | 标签浮在柱子顶部 |
+
+---
+
 ## Math.toRadians — 角度转弧度
 
 ```js
@@ -262,3 +336,42 @@ viewer.scene.primitives.add(buildingTileset);
 cd 项目目录
 npx http-server -p 8080 -c-1
 ```
+
+---
+
+## 性能优化 — 让 Cesium 在集成显卡上跑流畅
+
+Iris Xe 等集成显卡跑 Cesium 卡顿的**根源不是 Entity 数量，而是 Cesium 渲染管线本身对 GPU 就有压力**。
+
+### 优化优先级
+
+| 优先级 | 操作 | 效果 |
+|--------|------|------|
+| ⭐ 必做 | `requestRenderMode: true` | **不动时不渲染**，拖拽反而更跟手 |
+| 推荐 | 关掉 Viewer 多余控件 | 减少 UI 渲染负担 |
+| 推荐 | 关光照/大气/雾/HDR/抗锯齿 | 不影响数据展示，省 GPU |
+| 可选 | Billboard 替代 3D Box | Canvas 画图贴上去，零 3D 开销 |
+| 可选 | Primitive Instancing | 合并 draw call |
+| 降画质 | `resolutionScale: 0.5` | 半分辨率渲染，画面模糊 |
+
+### 核心代码
+
+```js
+// 不动的帧不渲染——最关键的一行
+viewer.scene.requestRenderMode = true;
+viewer.scene.maximumRenderTimeChange = Infinity;
+
+// 关掉不必要的渲染特效
+viewer.scene.globe.enableLighting = false;
+viewer.scene.fog.enabled = false;
+viewer.scene.fxaa = false;
+viewer.scene.highDynamicRange = false;
+```
+
+### 实测结果（Iris Xe）
+
+| 配置 | 拖拽 FPS |
+|------|---------|
+| 原版 Entity Box + 全特效 | 15-20 |
+| Billboard + 关特效 | 20-30 |
+| **requestRenderMode + 关特效** | **100+** ✅ |

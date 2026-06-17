@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-    <title>GDP 柱状图</title>
+    <title>优化方案02 — Point 散点图</title>
 </head>
 <body>
     <div id="cesiumcontainer"></div>
@@ -14,46 +14,31 @@
         Cesium.Ion.defaultAccessToken = (await res.text()).trim();
 
         const viewer = new Cesium.Viewer('cesiumcontainer', {
-            // 隐藏天空和大气
             skyAtmosphere: false,
-            // 隐藏场景模式选择器
             sceneModePicker: false,
-            // 隐藏基础图层选择器
             baseLayerPicker: false,
         })
-        //  {
-        //     terrain: Cesium.Terrain.fromWorldTerrain(),
-        // });
 
         viewer.camera.flyTo({
             destination: Cesium.Cartesian3.fromDegrees(110, 35, 8000000),
         });
 
-        // 关闭光照
         viewer.scene.globe.enableLighting = false;
-        // 关闭雾
         viewer.scene.fog.enabled = false;
-        // 关闭抗锯齿
-        viewer.scene.fxaa=false;
+        viewer.scene.fxaa = false;
 
         const res01 = await fetch('china-gdp.json')
         const gdp = await res01.json()
+
         gdp.forEach(cities => {
-            const h = cities.gdp * 20
-            const w = 80000
-
-            // 柱子
             viewer.entities.add({
-                position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h / 2),
-                box: {
-                    dimensions: new Cesium.Cartesian3(w, w, h),
-                    material: Cesium.Color.RED
+                position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, 0),
+                point: {
+                    pixelSize: cities.gdp / 800,    // GDP 越高点越大
+                    color: Cesium.Color.RED.withAlpha(0.8),
+                    outlineColor: Cesium.Color.WHITE,
+                    outlineWidth: 1,
                 },
-            });
-
-            // 标签（柱子顶）
-            viewer.entities.add({
-                position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h+1000),
                 label: {
                     text: cities.name + '\n' + cities.gdp + '亿',
                     font: '20px sans-serif',
@@ -62,9 +47,10 @@
                     disableDepthTestDistance: 0,
                     distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 10000000),
                 },
-            });
-            viewer.scene.debugShowFramesPerSecond = true;
+            })
         })
+
+        viewer.scene.debugShowFramesPerSecond = true;
 
     </script>
 </body>

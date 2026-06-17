@@ -45,6 +45,8 @@ viewer.flyTo(entities);           // 飞过去看
 
 ## 学习顺序
 
-1. ✅ 跑通最简单的 3D 地球（index.html）
-2. ✅ 添加实体（点、标签、方块）
-3. ▶ 接下来：glTF 3D 模型、动态轨迹、地形、3D Tiles
+1. ✅ 01-hello-cesium — 跑通最简单的 3D 地球
+2. ✅ 02-province-markers — 添加实体（点、标签、距离控制）
+3. ✅ 03-gdp-visualization — Box 柱状图：数据驱动可视化
+4. ✅ 04-performance-optimization — Cesium 性能优化实验（Billboard / Point / Instancing）
+5. ▶ 接下来：glTF 3D 模型、动态轨迹、3D Tiles

@@ -62,6 +62,27 @@
 
 ---
 
+## 04-performance-optimization
+
+第四个项目：Cesium 性能优化实验。
+
+**项目位置：** `E:/my_repo/MyCesium/04-performance-optimization/`
+
+### 文件说明
+- `00-original-entity-box.html` — 原版 Entity Box（未优化，baseline）
+- `01-billboard.html` — Canvas 画柱子图片，Billboard 贴图，最轻量
+- `02-points.html` — Point 散点图，用点大小表示 GDP
+- `03-instancing.html` — Primitive Instancing 合并 34 个 Box 为 1 个 draw call
+
+### 在这个项目中学到了什么
+- **性能瓶颈诊断**：Cesium 卡顿不一定是电脑问题，而是 Entity Box 的 34 个 draw call 太重
+- **Billboard 替代 3D**：用 Canvas 画 2D 图片代替 3D Box，GPU 零负担，帧率翻 3-4 倍
+- **Primitive Instancing**：`GeometryInstance` + `Primitive` 合并 draw call，保留 3D 效果但性能明显提升
+- **Point 散点图**：最简单轻量的数据可视化方式，适合 Iris Xe 等集成显卡
+- **优化思路**：先关特效（光照/雾/HDR/抗锯齿），再换渲染方案（Billboard > Point > Instancing > Entity）
+
+---
+
 ## 注意
 
 - `cesium.com` **主站**（ion 控制台、文档）在国内访问慢/可能被墙

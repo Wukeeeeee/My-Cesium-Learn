@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-    <title>GDP 柱状图</title>
+    <title>优化方案03 — Primitive Instancing 3D 柱子</title>
 </head>
 <body>
     <div id="cesiumcontainer"></div>
@@ -14,46 +14,53 @@
         Cesium.Ion.defaultAccessToken = (await res.text()).trim();
 
         const viewer = new Cesium.Viewer('cesiumcontainer', {
-            // 隐藏天空和大气
             skyAtmosphere: false,
-            // 隐藏场景模式选择器
             sceneModePicker: false,
-            // 隐藏基础图层选择器
             baseLayerPicker: false,
         })
-        //  {
-        //     terrain: Cesium.Terrain.fromWorldTerrain(),
-        // });
 
         viewer.camera.flyTo({
             destination: Cesium.Cartesian3.fromDegrees(110, 35, 8000000),
         });
 
-        // 关闭光照
         viewer.scene.globe.enableLighting = false;
-        // 关闭雾
         viewer.scene.fog.enabled = false;
-        // 关闭抗锯齿
-        viewer.scene.fxaa=false;
+        viewer.scene.fxaa = false;
 
         const res01 = await fetch('china-gdp.json')
         const gdp = await res01.json()
-        gdp.forEach(cities => {
+
+        // ====== 柱子：Primitive Instancing（1 个 draw call）======
+        const instances = gdp.map(cities => {
             const h = cities.gdp * 20
             const w = 80000
 
-            // 柱子
-            viewer.entities.add({
-                position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h / 2),
-                box: {
-                    dimensions: new Cesium.Cartesian3(w, w, h),
-                    material: Cesium.Color.RED
-                },
-            });
+            const center = Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h / 2)
+            const transform = Cesium.Transforms.eastNorthUpToFixedFrame(center)
 
-            // 标签（柱子顶）
+            return new Cesium.GeometryInstance({
+                geometry: new Cesium.BoxGeometry({
+                    vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL,
+                    maximum: new Cesium.Cartesian3(w / 2, w / 2, h / 2),
+                    minimum: new Cesium.Cartesian3(-w / 2, -w / 2, -h / 2),
+                }),
+                modelMatrix: transform,
+            })
+        })
+
+        viewer.scene.primitives.add(new Cesium.Primitive({
+            geometryInstances: instances,
+            appearance: new Cesium.PerInstanceColorAppearance({
+                closed: true,
+                translucent: false,
+            }),
+        }))
+
+        // ====== 标签：Entity（文字不支持 Primitive）======
+        gdp.forEach(cities => {
+            const h = cities.gdp * 20
             viewer.entities.add({
-                position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h+1000),
+                position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h + 1000),
                 label: {
                     text: cities.name + '\n' + cities.gdp + '亿',
                     font: '20px sans-serif',
@@ -62,9 +69,10 @@
                     disableDepthTestDistance: 0,
                     distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 10000000),
                 },
-            });
-            viewer.scene.debugShowFramesPerSecond = true;
+            })
         })
+
+        viewer.scene.debugShowFramesPerSecond = true;
 
     </script>
 </body>
