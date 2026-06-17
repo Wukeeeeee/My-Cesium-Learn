@@ -61,6 +61,25 @@ CesiumJS 3D 地球学习项目，从零开始的练习记录。
 
 ---
 
+### 04-performance-optimization
+
+Cesium 性能优化实验，解决集成显卡拖拽卡顿问题。
+
+**文件：**
+- `00-original-entity-box.html` — 原版 Entity Box（baseline）
+- `01-billboard.html` — Canvas 画柱子 + Billboard 贴图
+- `02-points.html` — Point 散点图
+- `03-instancing.html` — Primitive Instancing 合并 draw call
+- `99-ultimate-optimization.html` — 终极优化（全关 + requestRenderMode）
+
+**学到什么：**
+- `requestRenderMode: true` 不动时不渲染，最关键的优化
+- `Primitive` + `GeometryInstance` 合并多个 Box 为 1 个 draw call
+- Billboard 用 Canvas 画图代替 3D 几何体，零 GPU 负担
+- 关掉光照/雾/HDR/抗锯齿，不影响数据展示但省 GPU
+
+---
+
 ## 启动方式
 
 ```bash
