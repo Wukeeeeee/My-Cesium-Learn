@@ -63,32 +63,14 @@
 ### 文件列表
 - `01-gdp-chart.html` — 基础版：Box + 标签 + DistanceDisplayCondition
 - `02-gdp-simple.html` — 改进版：柱体半高贴地 + 柱顶多行标签
-- `03-instancing.html` — Primitive Instancing 写法（性能优化）
-- `06-instancing-practice.html` — 带注释的 Instancing 练习版
-- `test.html` — 自己练习的测试文件
+- `03-instancing.html` — Primitive Instancing 写法
+- `test.html` — 带注释的 Instancing 练习版
 - `china-gdp.json` — 33个省会/直辖市/特区 GDP 数据
 
----
-
-## 04-rendering-comparison
-
-第四个项目：Cesium 渲染方案对比实验。
-
-**项目位置：** `E:/my_repo/MyCesium/04-rendering-comparison/`
-
-### 文件说明
-- `01-original-entity-box.html` — 原版 Entity Box（未优化，baseline）
-- `02-billboard.html` — Canvas 画柱子图片，Billboard 贴图，最轻量
-- `03-points.html` — Point 散点图，用点大小表示 GDP
-- `04-instancing.html` — Primitive Instancing 合并 34 个 Box 为 1 个 draw call
-- `05-ultimate.html` — 真正的优化：requestRenderMode + 关特效
-
-### 在这个项目中学到了什么
-- **性能瓶颈诊断**：Cesium 卡顿不一定是电脑问题，而是 Entity Box 的 34 个 draw call 太重
-- **Billboard 替代 3D**：用 Canvas 画 2D 图片代替 3D Box，GPU 零负担，帧率翻 3-4 倍
-- **Primitive Instancing**：`GeometryInstance` + `Primitive` 合并 draw call，保留 3D 效果但性能明显提升
-- **Point 散点图**：最简单轻量的数据可视化方式，适合 Iris Xe 等集成显卡
-- **优化思路**：先关特效（光照/雾/HDR/抗锯齿），再换渲染方案（Billboard > Point > Instancing > Entity）
+### 拓展知识
+- **Primitive Instancing**：`GeometryInstance` + `Primitive` 把多个 Box 合并为 1 个 draw call
+- **性能优化核心**：`requestRenderMode: true` 让不动时不渲染，拖拽反而更跟手
+- **不是所有方案都是优化**：Billboard / Point 只是不同画法，真正提升 FPS 的是关特效 + requestRenderMode
 
 ---
 
