@@ -499,6 +499,8 @@ viewer.scene.primitives.add(new Cesium.Primitive({
 ```
 
 > **缺点：** 不支持文字标签（需另加 Entity label），不方便点选交互。适合静态展示。
+>
+> 📖 **深度阅读：** [Primitive 定位原理详解](./Primitive-Positioning.md) — modelMatrix、eastNorthUpToFixedFrame、局部坐标 vs 地球坐标，看完就懂。
 
 ---
 

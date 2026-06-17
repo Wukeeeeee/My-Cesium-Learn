@@ -225,3 +225,171 @@ Primitive:
 ```
 
 **Entity 省事，Primitive 省性能。** 懂了这个，你就理解为什么 Instancing 快了。
+
+---
+
+## 实战代码逐段拆解（test copy.html）
+
+### 完整代码
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <title>GDP 柱状图</title>
+</head>
+<body>
+    <div id="cesiumcontainer"></div>
+    <script type="module">
+        // ====== ① API Key ======
+        const res = await fetch('apikey.txt');
+        Cesium.Ion.defaultAccessToken = (await res.text()).trim();
+
+        // ====== ② 创建地球 ======
+        const viewer = new Cesium.Viewer('cesiumcontainer', {
+            skyAtmosphere: false,
+            sceneModePicker: false,
+            baseLayerPicker: false,
+        })
+
+        // ====== ③ 飞中国 ======
+        viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(110, 35, 8000000),
+        });
+
+        // ====== ④ 关特效 ======
+        viewer.scene.globe.enableLighting = false;
+        viewer.scene.fog.enabled = false;
+        viewer.scene.fxaa = false;
+
+        // ====== ⑤ 读数据 ======
+        const gdpResponse = await fetch('china-gdp.json')
+        const gdp = await gdpResponse.json()
+
+        // ====== ⑥ 造柱子（Primitive Instancing） ======
+        const instances = gdp.map(cities => {
+            const h = cities.gdp * 20   // GDP → 柱子高度（米）
+            const w = 80000             // 柱子粗细（固定）
+
+            // ⑥-a 柱子中心位置（经纬度 + 半高 → 贴地）
+            const center = Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h / 2)
+
+            // ⑥-b 算旋转矩阵（让柱子"站"在地球表面）
+            const transform = Cesium.Transforms.eastNorthUpToFixedFrame(center)
+
+            // ⑥-c 打包工单：形状 + 位置
+            return new Cesium.GeometryInstance({
+                geometry: new Cesium.BoxGeometry({
+                    vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL,
+                    minimum: new Cesium.Cartesian3(-w / 2, -w / 2, -h / 2),
+                    maximum: new Cesium.Cartesian3(w / 2, w / 2, h / 2),
+                }),
+                modelMatrix: transform,
+            })
+        })
+
+        // ====== ⑦ 所有柱子一次性提交 GPU ======
+        viewer.scene.primitives.add(new Cesium.Primitive({
+            geometryInstances: instances,
+            appearance: new Cesium.PerInstanceColorAppearance({
+                closed: true,
+                translucent: false
+            })
+        }))
+
+        // ====== ⑧ 标签（Entity，因为 Primitive 不支持文字） ======
+        gdp.forEach(cities => {
+            const h = cities.gdp * 20
+            viewer.entities.add({
+                position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h + 1000),
+                label: {
+                    text: cities.name + '\n' + cities.gdp + '亿',
+                    font: '20px sans-serif',
+                    color: Cesium.Color.WHITE,
+                    verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                    disableDepthTestDistance: 0,
+                    distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 10000000),
+                },
+            })
+        })
+
+        // ====== ⑨ 显示 FPS ======
+        viewer.scene.debugShowFramesPerSecond = true
+    </script>
+</body>
+</html>
+```
+
+### 各段详解
+
+#### ⑥ `gdp.map(cities => {...})` — 造柱子
+
+| 行 | 代码 | 在干什么 | 容易忘的 |
+|----|------|---------|---------|
+| `const h = cities.gdp * 20` | GDP 数值 × 20 → 柱子高度（米） | 数值映射为视觉高度 |
+| `const w = 80000` | 柱子粗细 80 公里 | 固定值，所有柱子一样粗 |
+| `Cesium.Cartesian3.fromDegrees(lon, lat, h/2)` | 经纬度 → 三维坐标 | **第三个参数是 h/2，不是 h**，这样才能贴地 |
+| `Cesium.Transforms.eastNorthUpToFixedFrame(center)` | 算旋转矩阵 | 让柱子"站直"在地球表面，不同城市方向不同 |
+| `new Cesium.Cartesian3(-w/2, -w/2, -h/2)` | Box 的最小角（局部坐标） | **用 `new` 不是 `fromDegrees`** |
+| `new Cesium.Cartesian3(w/2, w/2, h/2)` | Box 的最大角（局部坐标） | 范围从 `(-w/2, -w/2, -h/2)` 到 `(w/2, w/2, h/2)` |
+
+#### 为什么用 `.map()` 不用 `.forEach()`？
+
+```js
+// ❌ forEach：只做事，不返回结果
+gdp.forEach(cities => {
+    return new Cesium.GeometryInstance({...})  // ← return 了没人接，丢了
+})
+
+// ✅ map：每个城市一个 GeometryInstance，收集成数组
+const instances = gdp.map(cities => {
+    return new Cesium.GeometryInstance({...})  // ← 自动收集到 instances[] 里
+})
+```
+
+#### ⑦ `viewer.scene.primitives.add()` — 提交 GPU
+
+```js
+viewer.scene.primitives.add(new Cesium.Primitive({
+    geometryInstances: instances,            // ← 34 张工单打包
+    appearance: new Cesium.PerInstanceColorAppearance({
+        closed: true,        // 封闭实体（画背面）
+        translucent: false   // 不透明（不计算透明度，更快）
+    })
+}))
+```
+
+- `geometryInstances`：之前 map 出来的 34 个 GeometryInstance 数组
+- `closed: true`：柱子是实心的，背面也要渲染
+- `translucent: false`：不透明，不需要混合计算
+
+#### ⑧ 标签为什么单独 forEach？
+
+**Primitive 不支持文字**，所以标签还得用 Entity API，单独遍历一次：
+
+```js
+gdp.forEach(cities => {
+    viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(lon, lat, h + 1000), // ← 柱子顶 + 1000米
+        label: { text, font, color, ... }
+    })
+})
+```
+
+`h + 1000`：标签悬浮在柱子顶部往上 1000 米，不会埋在柱子里。
+
+---
+
+## test.html 常见错误速查
+
+| 你容易犯的错 | 后果 | 正确写法 |
+|------------|------|---------|
+| `fromDegrees` 算 Box 尺寸 | 盒子跑到奇怪位置 | `new Cesium.Cartesian3(w, w, h)` |
+| `.forEach` 返回 GeometryInstance | 没人收集，柱子在空气中 | `.map` 收集数组 |
+| `appearance: { color: RED }` | 报错 | `new PerInstanceColorAppearance({...})` |
+| `fromDegrees(lon, lat, h)` | 柱子悬空 | `fromDegrees(lon, lat, h/2)` 贴地 |
+| 忘记 `modelMatrix` | 看不到柱子 | 加上 `modelMatrix: transform` |
+| 柱子和标签写在一个循环里 | 结构乱 | 先 map 柱子，再 forEach 标签 |
