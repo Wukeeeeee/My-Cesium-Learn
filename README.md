@@ -52,7 +52,6 @@ CesiumJS 3D 地球学习项目，从零开始的练习记录。
 - `01-gdp-chart.html` — GDP 柱状图（带地形，最完整版）
 - `02-gdp-simple.html` — GDP 柱状图（无地形，简单版）
 - `03-instancing.html` — Primitive Instancing 写法
-- `06-instancing-practice.html` — 带注释的 Instancing 练习
 - `test.html` — 自己练习
 - `china-gdp.json` — 城市GDP数据（含经纬度、海拔），共34条
 
