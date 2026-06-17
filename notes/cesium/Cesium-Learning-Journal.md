@@ -114,7 +114,7 @@ viewer.entities.add({
 **为什么用这个？** Entity 每根柱子都单独跟 GPU 通信一次（34次=34个 draw call），卡。Instancing 把所有柱子打包成一次提交（1个 draw call），快。
 
 ```js
-// ⭐ .map 遍历数组并收集返回值（.forEach 不收集，不能用）
+// .map 遍历数组并收集返回值（.forEach 不收集，不能用）
 const instances = data.map(item => {
     const h = item.gdp * 20;
     const w = 80000;
@@ -133,7 +133,7 @@ const instances = data.map(item => {
         geometry: new Cesium.BoxGeometry({
             vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL,
             // minimum/maximum：两个对角顶点，范围从 (-w/2, -h/2) 到 (w/2, h/2)
-            // 注意⚠️ 用 new Cartesian3，不是 fromDegrees！
+            // 注意：用 new Cartesian3，不是 fromDegrees！
             minimum: new Cesium.Cartesian3(-w/2, -w/2, -h/2),
             maximum: new Cesium.Cartesian3(w/2, w/2, h/2),
         }),
@@ -170,10 +170,10 @@ data.forEach(item => {
 
 ---
 
-## ⚡ 性能优化
+## 性能优化
 
 ```js
-// ⭐ 最关键的优化：不动时不渲染，拖拽反而更跟手
+// 最关键的优化：不动时不渲染，拖拽反而更跟手
 viewer.scene.requestRenderMode = true;
 
 // 关特效（对数据展示没影响，但省 GPU）
@@ -188,7 +188,7 @@ viewer.scene.debugShowFramesPerSecond = true;
 
 ---
 
-## ❌ 常见错误
+## 常见错误
 
 ```js
 // 1. fromDegrees 不能算 Box 尺寸❌  要用 new Cartesian3 ✅
@@ -208,7 +208,7 @@ appearance: { color: RED }           // 错
 new PerInstanceColorAppearance({})   // 对
 ```
 
-## ▶ 启动
+## 启动
 
 ```bash
 cd 项目目录
