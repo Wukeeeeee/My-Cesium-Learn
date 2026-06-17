@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <title>Document</title>
+</head>
+<body>
+    <div id="cesiumcontainer"></div>
+    <script type="module">
+
+        const res = await fetch('apikey.txt');
+        Cesium.Ion.defaultAccessToken = (await res.text()).trim();
+
+        const viewer=new Cesium.Viewer('cesiumcontainer',{
+            terrain: Cesium.Terrain.fromWorldTerrain(),
+        });
+
+        //设置相机飞到的位置
+        viewer.camera.flyTo({
+            //经纬度
+            destination:Cesium.Cartesian3.fromDegrees(113.27, 23.13, 4000000),
+            
+        });
+
+        // const entity=viewer.entities.add({
+        //     position:Cesium.Cartesian3.fromDegrees(113.27, 23.13, 400),
+        //     point:{
+        //         pixelSize:10,
+        //         color:Cesium.Color.RED,
+        //     },
+        //     label:{
+        //         text:"广州",
+        //         font:'40px sans-serif',
+        //         color:Cesium.Color.WHITE,
+        //     }
+
+        // })
+
+        const res_city=await fetch("china-cities.json")
+        const cities=await res_city.json()
+
+        cities.forEach(city=>{
+            viewer.entities.add({
+                position:Cesium.Cartesian3.fromDegrees(city.lon,city.lat,400),
+                point:{
+                    pixelSize:10,
+                    color:Cesium.Color.RED,
+                },
+                label:{
+                    text:city.name,
+                    font:'20px sans-serif',
+                    color:Cesium.Color.WHITE,
+                    pixelOffset:new Cesium.Cartesian2(0,10),
+                },
+                disableDepthTestDistance:0,
+            })
+        })
+    </script>
+</body>
+</html>
