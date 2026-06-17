@@ -51,33 +51,19 @@ CesiumJS 3D 地球学习项目，从零开始的练习记录。
 **文件：**
 - `01-gdp-chart.html` — GDP 柱状图（带地形，最完整版）
 - `02-gdp-simple.html` — GDP 柱状图（无地形，简单版）
+- `03-instancing.html` — Primitive Instancing 写法
+- `06-instancing-practice.html` — 带注释的 Instancing 练习
+- `test.html` — 自己练习
 - `china-gdp.json` — 城市GDP数据（含经纬度、海拔），共34条
 
 **学到什么：**
 - `box` 创建3D柱子，`position` 高度 = 柱高/2 让柱子贴地
 - `verticalOrigin: BOTTOM` 标签在柱子顶往上长
 - `disableDepthTestDistance: 0` 标签不被柱子挡住
+- Primitive Instancing：`GeometryInstance` + `Primitive` 合并 draw call
 - 高海拔城市（拉萨3650m）地形导致柱子埋地里的问题
 
----
-
-### 04-rendering-comparison
-
-Cesium 渲染方案对比实验，测试不同画法的性能差异。
-
-**文件：**
-- `01-original-entity-box.html` — 原版 Entity Box（baseline）
-- `02-billboard.html` — Canvas 画柱子 + Billboard 贴图
-- `03-points.html` — Point 散点图
-- `04-instancing.html` — Primitive Instancing 合并 draw call
-- `05-ultimate.html` — 真正的优化（requestRenderMode + 关特效）
-
-**学到什么：**
-- `requestRenderMode: true` 不动时不渲染，最关键的优化
-- Billboard / Point / Instancing 只是不同画法，性能提升有限
-- 关掉光照/雾/HDR/抗锯齿，不影响数据展示但省 GPU
-
-> 📖 **深度阅读：** [Primitive 定位原理详解](notes/cesium/Primitive-Positioning.md) — 为什么 Entity 只需要 `position`，Primitive 却要 `modelMatrix` + `eastNorthUpToFixedFrame`，看完就懂。
+> 📖 **深度阅读：** [Primitive 定位原理详解](notes/cesium/Primitive-Positioning.md)
 
 ---
 

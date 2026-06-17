@@ -60,6 +60,14 @@
 - **地形问题**：地形瓦片从美国加载慢，高海拔城市（拉萨3650m）柱子会埋地里
 - **外部数据加载**：`fetch('china-gdp.json')` 批量创建柱子+标签组合
 
+### 文件列表
+- `01-gdp-chart.html` — 基础版：Box + 标签 + DistanceDisplayCondition
+- `02-gdp-simple.html` — 改进版：柱体半高贴地 + 柱顶多行标签
+- `03-instancing.html` — Primitive Instancing 写法（性能优化）
+- `06-instancing-practice.html` — 带注释的 Instancing 练习版
+- `test.html` — 自己练习的测试文件
+- `china-gdp.json` — 33个省会/直辖市/特区 GDP 数据
+
 ---
 
 ## 04-rendering-comparison

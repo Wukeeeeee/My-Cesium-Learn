@@ -47,6 +47,5 @@ viewer.flyTo(entities);           // 飞过去看
 
 1. ✅ 01-hello-cesium — 跑通最简单的 3D 地球
 2. ✅ 02-province-markers — 添加实体（点、标签、距离控制）
-3. ✅ 03-gdp-visualization — Box 柱状图：数据驱动可视化
-4. ✅ 04-rendering-comparison — Cesium 渲染方案对比（Entity / Billboard / Point / Instancing / Ultimate）
-5. ▶ 接下来：glTF 3D 模型、动态轨迹、3D Tiles
+3. ✅ 03-gdp-visualization — Box 柱状图 + Primitive Instancing 写法
+4. ▶ 接下来：glTF 3D 模型、动态轨迹、3D Tiles
