@@ -62,7 +62,7 @@ CesiumJS 3D 地球学习项目，从零开始的练习记录。
 - Primitive Instancing：`GeometryInstance` + `Primitive` 合并 draw call
 - 高海拔城市（拉萨3650m）地形导致柱子埋地里的问题
 
-> 📖 详细代码注释见 [code-quick-ref.md](notes/cesium/code-quick-ref.md)
+> 📖 详细代码注释见 [Cesium-Learning-Journal.md](notes/cesium/Cesium-Learning-Journal.md)
 
 ---
 
