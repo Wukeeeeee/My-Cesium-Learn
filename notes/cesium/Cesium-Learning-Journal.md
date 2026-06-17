@@ -41,6 +41,25 @@
 - **视角切换**：`viewer.camera.setView()` 瞬间定位到亚洲（无动画，比 `flyTo` 更快）
 - **地形 vs 无地形**：`Cesium.Terrain.fromWorldTerrain()` 增加了地球真实起伏，但地形瓦片从美国服务器加载，国内访问慢容易超时失败
 
+## 03-gdp-visualization
+
+第三个项目：各省会/直辖市/特区 GDP 柱状图可视化。
+
+**项目位置：** `E:/my_repo/MyCesium/03-gdp-visualization/`
+
+### 文件说明
+- `01-gdp-chart.html` — GDP 柱状图（带地形，最完整版）
+- `02-gdp-simple.html` — GDP 柱状图（无地形，简单版）
+- `china-gdp.json` — 城市GDP数据（含经纬度、海拔），共34条
+
+### 在这个项目中学到了什么
+- **Box 柱子**：用 `viewer.entities.add({ box: { dimensions } })` 创建3D柱子
+- **柱子贴地**：`position` 高度 = `dimensions.z / 2`，中心抬一半，底部贴地面
+- **标签订位**：`verticalOrigin: BOTTOM` 让标签在柱子顶往上长
+- **标签穿透**：`disableDepthTestDistance: 0` 防止标签被柱子挡住
+- **地形问题**：地形瓦片从美国加载慢，高海拔城市（拉萨3650m）柱子会埋地里
+- **外部数据加载**：`fetch('china-gdp.json')` 批量创建柱子+标签组合
+
 ---
 
 ## 注意

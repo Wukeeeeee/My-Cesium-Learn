@@ -44,6 +44,23 @@ CesiumJS 3D 地球学习项目，从零开始的练习记录。
 
 ---
 
+### 03-gdp-visualization
+
+各省会/直辖市/特区 GDP 柱状图可视化。
+
+**文件：**
+- `01-gdp-chart.html` — GDP 柱状图（带地形，最完整版）
+- `02-gdp-simple.html` — GDP 柱状图（无地形，简单版）
+- `china-gdp.json` — 城市GDP数据（含经纬度、海拔），共34条
+
+**学到什么：**
+- `box` 创建3D柱子，`position` 高度 = 柱高/2 让柱子贴地
+- `verticalOrigin: BOTTOM` 标签在柱子顶往上长
+- `disableDepthTestDistance: 0` 标签不被柱子挡住
+- 高海拔城市（拉萨3650m）地形导致柱子埋地里的问题
+
+---
+
 ## 启动方式
 
 ```bash

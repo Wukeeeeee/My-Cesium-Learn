@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <title>GDP 柱状图</title>
+</head>
+<body>
+    <div id="cesiumcontainer"></div>
+    <script type="module">
+
+        const res = await fetch('apikey.txt');
+        Cesium.Ion.defaultAccessToken = (await res.text()).trim();
+
+        const viewer = new Cesium.Viewer('cesiumcontainer', {
+            terrain: Cesium.Terrain.fromWorldTerrain(),
+        });
+
+        viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(110, 35, 8000000),
+        });
+
+        const res01 = await fetch('china-gdp.json')
+        const gdp = await res01.json()
+        gdp.forEach(cities => {
+            const h = cities.gdp * 20
+            const w = 80000
+
+            // 柱子
+            viewer.entities.add({
+                position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h / 2),
+                box: {
+                    dimensions: new Cesium.Cartesian3(w, w, h),
+                    material: Cesium.Color.RED
+                },
+            });
+
+            // 标签（柱子顶）
+            viewer.entities.add({
+                position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h+1000),
+                label: {
+                    text: cities.name + '\n' + cities.gdp + '亿',
+                    font: '20px sans-serif',
+                    color: Cesium.Color.WHITE,
+                    verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                    disableDepthTestDistance: 0,
+                },
+            });
+
+        })
+
+    </script>
+</body>
+</html>
