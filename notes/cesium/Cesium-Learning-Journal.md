@@ -62,17 +62,18 @@
 
 ---
 
-## 04-performance-optimization
+## 04-rendering-comparison
 
-第四个项目：Cesium 性能优化实验。
+第四个项目：Cesium 渲染方案对比实验。
 
-**项目位置：** `E:/my_repo/MyCesium/04-performance-optimization/`
+**项目位置：** `E:/my_repo/MyCesium/04-rendering-comparison/`
 
 ### 文件说明
-- `00-original-entity-box.html` — 原版 Entity Box（未优化，baseline）
-- `01-billboard.html` — Canvas 画柱子图片，Billboard 贴图，最轻量
-- `02-points.html` — Point 散点图，用点大小表示 GDP
-- `03-instancing.html` — Primitive Instancing 合并 34 个 Box 为 1 个 draw call
+- `01-original-entity-box.html` — 原版 Entity Box（未优化，baseline）
+- `02-billboard.html` — Canvas 画柱子图片，Billboard 贴图，最轻量
+- `03-points.html` — Point 散点图，用点大小表示 GDP
+- `04-instancing.html` — Primitive Instancing 合并 34 个 Box 为 1 个 draw call
+- `05-ultimate.html` — 真正的优化：requestRenderMode + 关特效
 
 ### 在这个项目中学到了什么
 - **性能瓶颈诊断**：Cesium 卡顿不一定是电脑问题，而是 Entity Box 的 34 个 draw call 太重

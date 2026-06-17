@@ -61,21 +61,20 @@ CesiumJS 3D 地球学习项目，从零开始的练习记录。
 
 ---
 
-### 04-performance-optimization
+### 04-rendering-comparison
 
-Cesium 性能优化实验，解决集成显卡拖拽卡顿问题。
+Cesium 渲染方案对比实验，测试不同画法的性能差异。
 
 **文件：**
-- `00-original-entity-box.html` — 原版 Entity Box（baseline）
-- `01-billboard.html` — Canvas 画柱子 + Billboard 贴图
-- `02-points.html` — Point 散点图
-- `03-instancing.html` — Primitive Instancing 合并 draw call
-- `99-ultimate-optimization.html` — 终极优化（全关 + requestRenderMode）
+- `01-original-entity-box.html` — 原版 Entity Box（baseline）
+- `02-billboard.html` — Canvas 画柱子 + Billboard 贴图
+- `03-points.html` — Point 散点图
+- `04-instancing.html` — Primitive Instancing 合并 draw call
+- `05-ultimate.html` — 真正的优化（requestRenderMode + 关特效）
 
 **学到什么：**
 - `requestRenderMode: true` 不动时不渲染，最关键的优化
-- `Primitive` + `GeometryInstance` 合并多个 Box 为 1 个 draw call
-- Billboard 用 Canvas 画图代替 3D 几何体，零 GPU 负担
+- Billboard / Point / Instancing 只是不同画法，性能提升有限
 - 关掉光照/雾/HDR/抗锯齿，不影响数据展示但省 GPU
 
 > 📖 **深度阅读：** [Primitive 定位原理详解](notes/cesium/Primitive-Positioning.md) — 为什么 Entity 只需要 `position`，Primitive 却要 `modelMatrix` + `eastNorthUpToFixedFrame`，看完就懂。

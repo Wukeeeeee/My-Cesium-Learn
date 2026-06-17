@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-    <title>极限优化 — 全关 最低画质</title>
+    <title>05 — 终极优化 requestRenderMode</title>
     <style>
-        /* 把没用的UI按钮藏掉 */
         .cesium-viewer-bottom, .cesium-animation-rect, .cesium-timeline-main {
             display: none !important;
         }
@@ -20,11 +19,9 @@
         Cesium.Ion.defaultAccessToken = (await res.text()).trim();
 
         const viewer = new Cesium.Viewer('cesiumcontainer', {
-            // ===== 关掉一切不需要的 =====
-            // imageryProvider: false,              // 关地图（你要开，所以注释掉）
-            terrain: undefined,                     // 关地形
-            skyAtmosphere: false,                   // 关大气
-            skyBox: false,                          // 关天空盒
+            terrain: undefined,
+            skyAtmosphere: false,
+            skyBox: false,
             sceneModePicker: false,
             baseLayerPicker: false,
             navigationHelpButton: false,
@@ -35,7 +32,6 @@
             selectionIndicator: false,
         });
 
-        // ===== 关掉所有渲染特效 =====
         viewer.scene.globe.enableLighting = false;
         viewer.scene.globe.showGroundAtmosphere = false;
         viewer.scene.globe.showWaterEffect = false;
@@ -43,11 +39,7 @@
         viewer.scene.fxaa = false;
         viewer.scene.highDynamicRange = false;
 
-        // ===== 降低渲染精度（调回正常，FPS 够用） =====
-        // resolutionScale: 0.5,  // 关掉半分辨率，你 FPS 够
-        viewer.scene.globe.maximumScreenSpaceError = 16;   // 默认16，清晰度正常
-
-        // ===== 不动时不渲染 =====
+        // ===== 真正的优化核心：不动时不渲染 =====
         viewer.scene.requestRenderMode = true;
         viewer.scene.maximumRenderTimeChange = Infinity;
 
@@ -55,14 +47,12 @@
             destination: Cesium.Cartesian3.fromDegrees(110, 35, 8000000),
         });
 
-        // ===== 数据：这里你可以换成不用方案的 =====
         const res01 = await fetch('china-gdp.json')
         const gdp = await res01.json()
 
-        // Billboard 方案（最轻量）
+        // Billboard（最轻量）
         gdp.forEach(cities => {
             const h = cities.gdp * 20
-
             const canvas = document.createElement('canvas')
             canvas.width = 64
             canvas.height = Math.max(h / 5000, 10)
