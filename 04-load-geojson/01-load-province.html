@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    #cesiumContainer { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <script type="module">
+    const res = await fetch('apikey.txt');
+    Cesium.Ion.defaultAccessToken = (await res.text()).trim();
+
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrain: Cesium.Terrain.fromWorldTerrain(),
+      baseLayerPicker: false,
+    });
+
+    try {
+      const chinaProvince = await fetch('china-province.geojson');
+      const chinaProvinceData = await chinaProvince.json();
+
+      delete chinaProvinceData.crs
+
+      // 加载省份数据
+      const ds=await Cesium.GeoJsonDataSource.load(chinaProvinceData,{
+        stroke: Cesium.Color.YELLOW,
+        strokeWidth: 20,
+        // 配置填充颜色
+        fill: Cesium.Color.WHITE.withAlpha(0),
+        clampToGround: false
+      });
+
+      viewer.dataSources.add(ds);
+      
+      const southsea = await fetch('southsea.geojson');
+      const southseaData = await southsea.json();
+
+      delete southseaData.crs
+
+      //string没有fill clampToGround属性
+      const ss=await Cesium.GeoJsonDataSource.load(southseaData,{
+        stroke: Cesium.Color.RED,
+        strokeWidth: 5,
+        // fill: Cesium.Color.WHITE.withAlpha(0),
+        // clampToGround: false
+      });
+
+      viewer.dataSources.add(ss);
+
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(110, 35, 5000000),
+        duration: 2
+      });
+
+    } catch (error) {
+      console.error('Error:', error);
+    }
+
+    viewer.scene.debugShowFramesPerSecond = true;
+  </script>
+</body>
+</html>

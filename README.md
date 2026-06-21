@@ -1,82 +1,47 @@
 # My Cesium Learn
 
-CesiumJS 3D 地球学习项目，从零开始的练习记录。
+CesiumJS 3D 地球学习项目。
 
 ---
 
-## 项目列表
+## 📁 01-create-globe
+| 文件 | 内容 |
+|------|------|
+| `01-first-globe.html` | 创建第一个3D地球 |
+| `02-fly-to-location.html` | 飞到指定位置 |
 
-### 01-hello-cesium
+## 📁 02-add-markers
+| 文件 | 内容 |
+|------|------|
+| `01-add-markers.html` | 在地图上加标记点 |
+| `02-label-fix.html` | 文字标签显示优化 |
+| `03-label-distance.html` | 控制标签显示距离 |
 
-入门第一个项目，创建 3D 地球。
+## 📁 03-make-chart
+| 文件 | 内容 |
+|------|------|
+| `01-chart-entity.html` | 用Entity画图表 |
+| `02-chart-simple.html` | 简化版图表 |
+| `03-chart-fast.html` | 性能优化版（Primitive Instancing） |
 
-**文件：**
-- `01-hello-globe.html` — 创建第一个 3D 地球，飞往旧金山（带 3D 建筑）
-- `02-shenzhen-practice.html` — 第二个练习，飞往深圳
-
-**学到什么：**
-- `Cesium.Viewer` 创建 3D 地球
-- `flyTo` 飞到指定经纬度
-- `Cartesian3.fromDegrees()` 经纬度转坐标
-- `fetch` 读取本地 `apikey.txt` 管理 token
-- `http-server` 启动本地服务器
-- Debug：`flyto` 大小写错误、`getElementById` 找不到元素
-
----
-
-### 02-province-markers
-
-在地球上批量标注全国省会/直辖市/特区。
-
-**文件：**
-- `01-load-cities.html` — 基础版：加载全国省会红点+标签
-- `02-label-distance-limit.html` — 防止标签穿透地球（`disableDepthTestDistance`）
-- `03-distance-display.html` — 距离控制显示标签（`distanceDisplayCondition`），最完整版
-- `china-cities.json` — 34个省级行政中心经纬度数据
-
-**学到什么：**
-- `fetch('china-cities.json')` + `forEach` 批量加点
-- `verticalOrigin: TOP` + `pixelOffset` 让标签显示在点下方
-- `disableDepthTestDistance: 0` 标签不穿透地球背面
-- `distanceDisplayCondition` 控制标签在特定距离显示，解决港澳重叠问题
-- `setView` 瞬间定位 vs `flyTo` 动画定位
-- 地形瓦片国内访问慢的问题
+## 📁 04-load-geojson
+| 文件 | 内容 |
+|------|------|
+| `01-load-province.html` | 加载GeoJSON中国省界 + 南海九段线 |
+| `china-province.geojson` | 中国省份边界数据 |
+| `southsea.geojson` | 南海九段线数据 |
 
 ---
 
-### 03-gdp-visualization
-
-各省会/直辖市/特区 GDP 柱状图可视化。
-
-**文件：**
-- `01-gdp-chart.html` — GDP 柱状图（带地形，最完整版）
-- `02-gdp-simple.html` — GDP 柱状图（无地形，简单版）
-- `03-instancing.html` — Primitive Instancing 写法
-- `test.html` — 自己练习
-- `china-gdp.json` — 城市GDP数据（含经纬度、海拔），共34条
-
-**学到什么：**
-- `box` 创建3D柱子，`position` 高度 = 柱高/2 让柱子贴地
-- `verticalOrigin: BOTTOM` 标签在柱子顶往上长
-- `disableDepthTestDistance: 0` 标签不被柱子挡住
-- Primitive Instancing：`GeometryInstance` + `Primitive` 合并 draw call
-- 高海拔城市（拉萨3650m）地形导致柱子埋地里的问题
-
-> 📖 详细代码注释见 [Cesium-Learning-Journal.md](notes/cesium/Cesium-Learning-Journal.md)
-
----
-
-## 启动方式
+## 启动
 
 ```bash
 cd 项目目录
 npx http-server -p 8080 -c-1
 ```
 
-浏览器打开 `http://localhost:8080`。
-
-> 必须用 http-server 启动，不支持 `file://` 双击打开。
+> 必须用 http-server，不支持双击。
 
 ## 笔记
 
-详细概念参考和函数速查见 [notes/cesium/](notes/cesium/) 目录。
+见 [notes/cesium/](notes/cesium/)
