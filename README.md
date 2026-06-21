@@ -1,53 +1,96 @@
-# 🛰️ My Cesium Learn
+# My Cesium Learn
 
-CesiumJS 3D 地球学习项目，从零开始一步步搭建。
-
----
-
-## 📂 项目列表
-
-### 01-create-globe — 创建3D地球
-| # | 文件 | 内容 |
-|:-|:-----|:------|
-| 1 | `01-first-globe.html` | 初始化Cesium Viewer，创建第一个3D地球，飞往旧金山 |
-| 2 | `02-fly-to-location.html` | 飞往深圳，练习相机角度控制（heading + pitch） |
-
-### 02-add-markers — 添加标记
-| # | 文件 | 内容 |
-|:-|:-----|:------|
-| 1 | `01-add-markers.html` | 从JSON读取数据，批量添加标记点+文字标签 |
-| 2 | `02-label-fix.html` | 解决标签穿透地球背面问题（`disableDepthTestDistance`） |
-| 3 | `03-label-distance.html` | 相机距离控制标签显隐（`distanceDisplayCondition`） |
-
-### 03-make-chart — 制作图表
-| # | 文件 | 内容 |
-|:-|:-----|:------|
-| 1 | `01-chart-entity.html` | 用Entity Box绘制GDP柱状图 |
-| 2 | `02-chart-simple.html` | 简化版，柱子贴地（`position = h/2`） |
-| 3 | `03-chart-fast.html` | 🔥 Primitive Instancing 性能优化（34根柱子1次draw call） |
-| 4 | `04-test.html` | 练习文件 |
-
-### 04-load-geojson — GeoJSON 数据加载
-| # | 文件 | 内容 |
-|:-|:-----|:------|
-| 1 | `01-load-province.html` | 加载中国省界GeoJSON + 南海九段线 |
-| 2 | `china-province.geojson` | 中国34个省级行政区边界数据 |
-| 3 | `southsea.geojson` | 南海九段线数据 |
+CesiumJS 3D 地球学习项目，从零开始的练习记录。
 
 ---
 
-## 🚀 启动方式
+## 项目列表
+
+### 01-create-globe
+
+入门第一个项目，创建 3D 地球。
+
+**文件：**
+- `01-first-globe.html` — 创建第一个 3D 地球，飞往旧金山
+- `02-fly-to-location.html` — 飞往深圳，练习相机角度控制
+
+**学到什么：**
+- `Cesium.Viewer` 创建 3D 地球
+- `flyTo` 飞到指定经纬度
+- `Cartesian3.fromDegrees()` 经纬度转坐标
+- `heading` + `pitch` 控制相机角度
+- `fetch` 读取本地 `apikey.txt` 管理 token
+
+---
+
+### 02-add-markers
+
+在地球上批量标注全国省会/直辖市/特区。
+
+**文件：**
+- `01-add-markers.html` — 从JSON读取34个城市数据，批量标红点+名称标签
+- `02-label-fix.html` — 解决标签穿透地球背面问题
+- `03-label-distance.html` — 相机距离控制标签显隐
+
+**学到什么：**
+- `fetch('china-cities.json')` + `forEach` 批量加点
+- `verticalOrigin: TOP` + `pixelOffset` 控制标签位置
+- `disableDepthTestDistance: 0` 标签不穿透地球背面
+- `distanceDisplayCondition` 控制标签在特定距离显示
+- `setView` 瞬间定位 vs `flyTo` 动画定位
+
+---
+
+### 03-make-chart
+
+GDP 柱状图可视化。
+
+**文件：**
+- `01-chart-entity.html` — 用 Entity Box 画柱子（带地形）
+- `02-chart-simple.html` — 简化版，无地形，柱子贴地
+- `03-chart-fast.html` — Primitive Instancing 性能优化（34根柱子→1次draw call）
+- `04-test.html` — 练习文件
+
+**学到什么：**
+- `box` 创建3D柱子，`position = h/2` 让柱子贴地
+- `verticalOrigin: BOTTOM` 控制标签位置
+- Primitive Instancing：`GeometryInstance` + `Primitive` 合并draw call
+- 性能优化：`requestRenderMode` + 关光照 + 关抗锯齿
+
+---
+
+### 04-load-geojson
+
+加载 GeoJSON 数据。
+
+**文件：**
+- `01-load-province.html` — 加载中国省界 + 南海九段线
+- `china-province.geojson` — 中国34个省级行政区边界数据
+- `southsea.geojson` — 南海九段线数据
+
+**学到什么：**
+- `GeoJsonDataSource.load()` 加载 GeoJSON
+- `stroke` / `strokeWidth` / `fill` 控制边界线样式
+- `clampToGround` 控制是否贴地
+- `delete data.crs` 解决CRS不兼容问题
+- 南海九段线用 `MultiLineString` 类型
+
+---
+
+## 启动方式
 
 ```bash
+cd 项目目录
 npx http-server -p 8080 -c-1
-# 浏览器打开 http://localhost:8080
 ```
 
-> ⚠️ 必须用 http-server，不支持直接双击打开（Cesium 跨域限制）
+浏览器打开 `http://localhost:8080`。
 
-## 📚 笔记
+> 必须用 http-server 启动，不支持 `file://` 双击打开。
 
-见 [notes/cesium/](notes/cesium/)
+## 笔记
+
+详细概念参考见 [notes/cesium/](notes/cesium/) 目录。
 
 ---
 
