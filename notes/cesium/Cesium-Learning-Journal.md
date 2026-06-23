@@ -183,15 +183,15 @@ viewer.scene.debugShowFramesPerSecond = true;
 ## 常见错误
 
 ```js
-// 1. fromDegrees 不能算 Box 尺寸❌  要用 new Cartesian3 ✅
+// 1. fromDegrees 不能算 Box 尺寸，要用 new Cartesian3
 fromDegrees(-w/2, -w/2, -h/2)  // 错，飞到外太空
 new Cartesian3(-w/2, -w/2, -h/2)  // 对
 
-// 2. forEach 不收集 return ❌  .map 才能收集 ✅
+// 2. forEach 不收集 return，.map 才能收集
 arr.forEach(i => { return xx })  // 丢了，接不住
 arr.map(i => { return xx })      // 收集成新数组
 
-// 3. 柱子贴地：position 高度 = h/2 ✅   = h 就悬空 ❌
+// 3. 柱子贴地：position 高度 = h/2，= h 就悬空
 fromDegrees(lon, lat, h/2)  // 贴地
 fromDegrees(lon, lat, h)    // 悬空
 
@@ -287,4 +287,36 @@ viewer.scene.globe.enableLighting = true;
 //添加太阳
 viewer.scene.sun=new Cesium.Sun();
 ```
+
+### CustomShader 建筑发光（glow.html）
+
+```js
+// 夜景氛围：关太阳 + 深色背景 + 关光照
+viewer.scene.sun = undefined;
+viewer.scene.globe.enableLighting = false;
+viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#0a0a1a');
+
+// CustomShader 设置 emissive 实现真发光
+const customShader = new Cesium.CustomShader({
+    lightingModel: Cesium.LightingModel.UNLIT,
+    fragmentShaderText: `
+        void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+            material.emissive = vec3(1.0, 0.6, 0.0);   // 橘色发光
+            material.diffuse = vec3(0.4, 0.25, 0.05);
+        }
+    `,
+});
+tileset.customShader = customShader;
+
+// 加Camera飞到广州
+viewer.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(113.27, 23.13, 2000),
+});
+```
+
+**踩坑：**
+- `shadow` 拼写少了 s（应该是 `shadows`）
+- `viewer.scene.sun = new Cesium.Sun()` 会报错，Cesium 默认就有太阳
+- `Cesium3DTileStyle` 不支持 `emissive`，不报错但完全没效果
+- `createOsmBuildingsAsync()` 包围盒是全球，`flyTo(tileset)` 相机不会动，要手动指定坐标
 
