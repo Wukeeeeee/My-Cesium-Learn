@@ -1,23 +1,26 @@
 # Cesium Learning Projects
 
-## 01-hello-cesium — 第一个 3D 地球
+## 01-create-globe — 创建 3D 地球
 
-**位置：** `E:/my_repo/MyCesium/01-hello-cesium/`
-**文件：** `01-hello-globe.html`、`02-shenzhen-practice.html`
+**位置：** `E:/my_repo/MyCesium/01-create-globe/`
+**文件：** `01-first-globe.html`、`02-fly-to-location.html`
 
 ```js
 // 读 API Key（fetch 读文件，.text() 转文本，.trim() 去换行）
 const res = await fetch('apikey.txt');
 Cesium.Ion.defaultAccessToken = (await res.text()).trim();
 
-// 创建 3D 地球，'cesiumcontainer' 对应 div 的 id
+// 创建 3D 地球
 const viewer = new Cesium.Viewer('cesiumcontainer');
 
-// 飞到中国上空
+// 飞到指定位置
 viewer.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(110, 35, 8000000),
+    destination: Cesium.Cartesian3.fromDegrees(113.27, 23.13, 400),
     // fromDegrees(经度, 纬度, 高度米)
-    // 800万米 ≈ 看整个中国
+    orientation: {
+        heading: Cesium.Math.toRadians(0.0),   // 朝向
+        pitch: Cesium.Math.toRadians(-30.0),   // 俯仰角
+    }
 });
 ```
 
@@ -25,81 +28,59 @@ viewer.camera.flyTo({
 
 ---
 
-## 02-province-markers — 批量标注省会
+## 02-add-markers — 批量标注省会
 
-**位置：** `E:/my_repo/MyCesium/02-province-markers/`
-**文件：** `01-load-cities.html`、`02-label-distance-limit.html`、`03-distance-display.html`
+**位置：** `E:/my_repo/MyCesium/02-add-markers/`
+**文件：** `01-add-markers.html`、`02-label-fix.html`、`03-label-distance.html`
 
 ```js
 // JSON 数据格式：[ { "name":"广州", "lon":113.27, "lat":23.13 }, ... ]
 
-// 读 JSON 文件，res.json() 把内容解析成数组
+// 读取 JSON 文件
 const res = await fetch('china-cities.json');
-const data = await res.json();
+const cities = await res.json();
 
-// forEach = 对数组里每个城市执行一次 { }
-data.forEach(item => {
+// forEach = 对数组里每个城市执行一次
+cities.forEach(item => {
     viewer.entities.add({
-
-        // 位置：经度、纬度、高度（0=地面）
         position: Cesium.Cartesian3.fromDegrees(item.lon, item.lat, 0),
-
-        // 画一个红点
-        point: {
-            pixelSize: 10,           // 点大小（像素）
-            color: Cesium.Color.RED,
-        },
-
-        // 加文字标签
+        point: { pixelSize: 10, color: Cesium.Color.RED },
         label: {
-            text: item.name,                            // 显示城市名
-            font: '20px sans-serif',                     // 字体
+            text: item.name,
+            font: '20px sans-serif',
             color: Cesium.Color.WHITE,
-            verticalOrigin: Cesium.VerticalOrigin.TOP,  // 点在文字下方
-            pixelOffset: new Cesium.Cartesian2(0, 10),  // 下移10像素不重叠
-            disableDepthTestDistance: 0,                // 不穿透地球背面
+            verticalOrigin: Cesium.VerticalOrigin.TOP,
+            pixelOffset: new Cesium.Cartesian2(0, 10),
+            disableDepthTestDistance: 0,    // 不穿透地球背面
             distanceDisplayCondition:
                 new Cesium.DistanceDisplayCondition(0, 500000),
-                // 相机距离 0~50万米 才显示，远了隐藏（防文字挤一起）
+                // 相机距离 0~50万米 才显示
         },
     });
 });
 ```
 
+**踩坑：** 地形瓦片国内访问慢、港澳距离近标签重叠要用 `distanceDisplayCondition`
+
 ---
 
-## 03-gdp-visualization — GDP 柱状图
+## 03-make-chart — GDP 柱状图
 
-**位置：** `E:/my_repo/MyCesium/03-gdp-visualization/`
-**文件：** `01-gdp-chart.html`（带地形）、`02-gdp-simple.html`（无地形）、`03-instancing.html`、`test.html`
+**位置：** `E:/my_repo/MyCesium/03-make-chart/`
+**文件：** `01-chart-entity.html`（带地形）、`02-chart-simple.html`（无地形）、`03-chart-fast.html`（Instancing）、`04-test.html`
 
 ### Entity Box 画柱子
 
 ```js
-const h = cities.gdp * 20;   // GDP 数值 ×20 → 柱子高度（米）
-const w = 80000;              // 柱子粗细，固定 8 万米
+const h = cities.gdp * 20;   // GDP ×20 → 柱子高度
+const w = 80000;
 
 viewer.entities.add({
-    // position 高度 = h/2 → 柱子底部贴地、中心在半高
     position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h / 2),
     box: {
         dimensions: new Cesium.Cartesian3(w, w, h),  // (宽, 深, 高)
         material: Cesium.Color.RED,
     },
-});
-
-// 柱顶标签（单独加一个 entity，放在柱子顶上方）
-viewer.entities.add({
-    position: Cesium.Cartesian3.fromDegrees(cities.lon, cities.lat, h + 1000),
-    label: {
-        text: cities.name + '\n' + cities.gdp + '亿',  // \n 换行
-        font: '20px sans-serif',
-        color: Cesium.Color.WHITE,
-        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,  // 文字往上长
-        disableDepthTestDistance: 0,                    // 不被柱子挡住
-        distanceDisplayCondition:
-            new Cesium.DistanceDisplayCondition(0, 10000000),
-    }
 });
 ```
 
@@ -118,55 +99,66 @@ viewer.entities.add({
 const instances = data.map(item => {
     const h = item.gdp * 20;
     const w = 80000;
-
-    // ① 算柱子中心在地球上的位置（经纬度 + 半高）
     const center = Cesium.Cartesian3.fromDegrees(item.lon, item.lat, h / 2);
-
-    // ② 算旋转矩阵 — 让柱子在地球表面"站直"
-    // 地球是球形的，广州的"上"和北京的"上"方向不同
-    // 这个函数算出柱子应该朝哪边才能垂直于地面
     const transform = Cesium.Transforms.eastNorthUpToFixedFrame(center);
 
-    // ③ 返回一张"工单"（形状 + 位置）
     return new Cesium.GeometryInstance({
-        // 形状：在局部坐标（原点）里定义一个长方体
         geometry: new Cesium.BoxGeometry({
             vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL,
-            // minimum/maximum：两个对角顶点，范围从 (-w/2, -h/2) 到 (w/2, h/2)
-            // 注意：用 new Cartesian3，不是 fromDegrees！
             minimum: new Cesium.Cartesian3(-w/2, -w/2, -h/2),
             maximum: new Cesium.Cartesian3(w/2, w/2, h/2),
         }),
-        modelMatrix: transform,  // 位置：告诉 GPU 把这个柱子放哪、朝哪
+        modelMatrix: transform,
     });
 });
 
-// ④ 所有工单一次性提交 GPU（34个柱子 → 1次画完）
+// 所有工单一次性提交 GPU（34个柱子 → 1次画完）
 viewer.scene.primitives.add(new Cesium.Primitive({
     geometryInstances: instances,
     appearance: new Cesium.PerInstanceColorAppearance({
-        closed: true,          // 封闭实体（画出柱子的背面）
-        translucent: false,    // 不透明，省去透明度计算
+        closed: true,
+        translucent: false,
     }),
 }));
-
-// ⑤ 标签还是用 Entity（Primitive 不支持文字）
-data.forEach(item => {
-    const h = item.gdp * 20;
-    viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(item.lon, item.lat, h + 1000),
-        label: {
-            text: item.name + '\n' + item.gdp + '亿',
-            font: '20px sans-serif',
-            color: Cesium.Color.WHITE,
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            disableDepthTestDistance: 0,
-            distanceDisplayCondition:
-                new Cesium.DistanceDisplayCondition(0, 10000000),
-        },
-    });
-});
 ```
+
+---
+
+## 04-load-geojson — 加载 GeoJSON
+
+**位置：** `E:/my_repo/MyCesium/04-load-geojson/`
+**文件：** `01-load-province.html`、`china-province.geojson`、`southsea.geojson`
+
+```js
+// ① 加载省份边界
+const res = await fetch('china-province.geojson');
+const data = await res.json();
+delete data.crs;  // 删除旧版CRS声明，否则Cesium报错
+
+const provinceDs = await Cesium.GeoJsonDataSource.load(data, {
+    stroke: Cesium.Color.YELLOW,          // 边界线颜色
+    strokeWidth: 2,                        // 边界线粗细
+    fill: Cesium.Color.WHITE.withAlpha(0), // 不填充
+    clampToGround: false,                  // 不贴地
+});
+viewer.dataSources.add(provinceDs);
+
+// ② 加载南海九段线（MultiLineString）
+const southsea = await fetch('southsea.geojson');
+const southseaData = await southsea.json();
+
+const ssDs = await Cesium.GeoJsonDataSource.load(southseaData, {
+    stroke: Cesium.Color.RED,
+    strokeWidth: 3,
+    clampToGround: false,
+});
+viewer.dataSources.add(ssDs);
+```
+
+**踩坑：**
+- `GeoJsonDataSource` 不是 `GeojsonDataSource`（大小写敏感）
+- 旧版geojson带 `crs` 字段会报错 → `delete data.crs`
+- MultiLineString 没有填充，只有 `stroke` 有效
 
 ---
 
@@ -182,7 +174,7 @@ viewer.scene.fog.enabled = false;             // 关雾
 viewer.scene.fxaa = false;                    // 关抗锯齿
 viewer.scene.highDynamicRange = false;        // 关 HDR
 
-// 左上角显示 FPS，拖拽时看卡不卡
+// 左上角显示 FPS
 viewer.scene.debugShowFramesPerSecond = true;
 ```
 
@@ -203,15 +195,96 @@ arr.map(i => { return xx })      // 收集成新数组
 fromDegrees(lon, lat, h/2)  // 贴地
 fromDegrees(lon, lat, h)    // 悬空
 
-// 4. Primitive 的 appearance 不能用普通对象❌
-appearance: { color: RED }           // 错
-new PerInstanceColorAppearance({})   // 对
+// 4. GeoJsonDataSource 不是 GeojsonDataSource
+Cesium.GeojsonDataSource.load()   // 错，不存在
+Cesium.GeoJsonDataSource.load()   // 对
+
+// 5. 旧版 geojson 要删 crs
+delete data.crs  // 否则报 Unknown crs name
 ```
 
 ## 启动
 
-```bash
-cd 项目目录
-npx http-server -p 8080 -c-1
-# 浏览器 → http://localhost:8080
+---
+
+## 05-3d-tiles — OSM 建筑白膜 + 发光
+
+**位置：** `E:/my_repo/MyCesium/05-3d-tiles/`
+**文件：** `01-osm-buildings-nyc.html`、`02-osm-buildings-style-test.html`、`glow.html`
+
+### 加载 OSM Buildings（纽约）
+
+```js
+const viewer = new Cesium.Viewer('cesiumContainer', {
+    terrain: Cesium.Terrain.fromWorldTerrain(),
+    //开启阴影
+    shadow: true,
+});
+
+//记得加Camera
+viewer.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(-74, 40.7, 5000000),
+    orientation: {
+        //俯仰角度
+        pitch: Cesium.Math.toRadians(-30),
+        //偏航角度
+        heading: Cesium.Math.toRadians(0),
+    }
+})
+
+async function loadTileset() {
+    const tileset=await Cesium.createOsmBuildingsAsync();
+    //添加到场景
+    viewer.scene.primitives.add(tileset);
+}
+loadTileset();
+
+//开启光照
+viewer.scene.globe.enableLighting = true;
+//添加太阳
+viewer.scene.sun=new Cesium.Sun();
 ```
+
+### Cesium3DTileStyle 测试（广州）
+
+```js
+const viewer = new Cesium.Viewer('cesiumContainer', {
+    terrain: Cesium.Terrain.fromWorldTerrain(),
+    //开启阴影
+    shadows: true,
+});
+
+//记得加camera
+viewer.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(113.27, 23.12, 50000),
+    orientation: {
+        //俯仰角度
+        pitch: Cesium.Math.toRadians(-30),
+        //偏航角度
+        heading: Cesium.Math.toRadians(0),
+    },
+    //飞行时间
+    duration: 1,
+});
+
+async function loadTileset() {
+    const tileset=await Cesium.createOsmBuildingsAsync();
+    //添加到场景
+    //primitive是整体渲染
+    viewer.scene.primitives.add(tileset),
+    tileset.style=new Cesium.Cesium3DTileStyle({
+        //颜色
+        //OSM白膜没有颜色
+        color: 'color("white")',
+        //发光颜色
+        emissive: 'color("orange")'
+    });
+}
+loadTileset();
+
+//开启光照
+viewer.scene.globe.enableLighting = true;
+//添加太阳
+viewer.scene.sun=new Cesium.Sun();
+```
+

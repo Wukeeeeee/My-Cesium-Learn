@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Include the CesiumJS JavaScript and CSS files -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <script type="module">
+    const res = await fetch('apikey.txt');
+    Cesium.Ion.defaultAccessToken = (await res.text()).trim();
+
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrain: Cesium.Terrain.fromWorldTerrain(),
+      //开启阴影
+      shadow: true,
+    });
+
+    //记得加Camera
+    viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(-74, 40.7, 5000000),
+        orientation: {
+            //俯仰角度
+            pitch: Cesium.Math.toRadians(-30),
+            //偏航角度
+            heading: Cesium.Math.toRadians(0),
+        }
+    })
+
+    async function loadTileset() {
+        const tileset=await Cesium.createOsmBuildingsAsync();
+        //添加到场景
+        viewer.scene.primitives.add(tileset);
+    }
+    loadTileset();
+    
+    //开启光照
+    viewer.scene.globe.enableLighting = true;
+    //添加太阳
+    viewer.scene.sun=new Cesium.Sun();
+
+    viewer.scene.debugShowFramesPerSecond = true;
+  </script>
+</body>
+</html>

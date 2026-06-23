@@ -25,6 +25,7 @@
       const chinaProvince = await fetch('china-province.geojson');
       const chinaProvinceData = await chinaProvince.json();
 
+      //删除坐标系信息
       delete chinaProvinceData.crs
 
       // 加载省份数据
@@ -32,6 +33,7 @@
         stroke: Cesium.Color.YELLOW,
         strokeWidth: 20,
         // 配置填充颜色
+        //透明度
         fill: Cesium.Color.WHITE.withAlpha(0),
         clampToGround: false
       });
@@ -44,6 +46,7 @@
       delete southseaData.crs
 
       //string没有fill clampToGround属性
+      //GeoJsonDataSource
       const ss=await Cesium.GeoJsonDataSource.load(southseaData,{
         stroke: Cesium.Color.RED,
         strokeWidth: 5,

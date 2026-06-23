@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <script type="module">
+    const res = await fetch('apikey.txt');
+    Cesium.Ion.defaultAccessToken = (await res.text()).trim();
+
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrain: Cesium.Terrain.fromWorldTerrain(),
+    });
+
+    // === 场景调暗：模拟夜景 ===
+    viewer.scene.sun = undefined;
+    viewer.scene.globe.enableLighting = false;
+    viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#0a0a1a');
+    viewer.scene.moon = undefined;
+
+    // === 自定义着色器：建筑发光 ===
+    const customShader = new Cesium.CustomShader({
+      lightingModel: Cesium.LightingModel.UNLIT,
+      fragmentShaderText: `
+        void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+          // 橘色发光
+          material.emissive = vec3(1.0, 0.6, 0.0);
+          // 基础颜色（白膜保留一点灰底）
+          material.diffuse = vec3(0.4, 0.25, 0.05);
+        }
+      `,
+    });
+
+    async function loadTileset() {
+      const tileset = await Cesium.createOsmBuildingsAsync();
+      viewer.scene.primitives.add(tileset);
+      tileset.customShader = customShader;
+      viewer.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(113.27, 23.13, 2000),
+        orientation: {
+          pitch: Cesium.Math.toRadians(-35),
+          heading: Cesium.Math.toRadians(0),
+        }
+      });
+    }
+    loadTileset();
+
+    viewer.scene.debugShowFramesPerSecond = true;
+  </script>
+</body>
+</html>

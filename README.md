@@ -77,6 +77,25 @@ GDP 柱状图可视化。
 
 ---
 
+### 05-3d-tiles
+
+OSM 全球建筑白膜加载 + CustomShader 发光效果。
+
+**文件：**
+- `01-osm-buildings-nyc.html` — 加载 OSM 全球建筑，飞到纽约
+- `02-osm-buildings-style-test.html` — 飞广州，测试 Cesium3DTileStyle
+- `glow.html` — CustomShader 建筑发光 + 夜景氛围
+- `cesium-building-glow-ref.md` — 掘金文章参考
+
+**学到什么：**
+- `createOsmBuildingsAsync()` 加载 OSM 全球建筑（无需资产ID）
+- `Cesium3DTileStyle` 不支持 `emissive`，要用 `CustomShader` ✅
+- `CustomShader` + `material.emissive` 实现建筑自发光
+- 夜景氛围：关太阳 + 深色背景 + 关光照
+- `Cesium3DTileset.fromUrl()` 加载指定资产ID
+
+---
+
 ## 启动方式
 
 ```bash
