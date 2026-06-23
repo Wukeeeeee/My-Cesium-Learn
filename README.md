@@ -87,7 +87,6 @@ OSM 全球建筑白膜加载。
 
 **学到什么：**
 - `createOsmBuildingsAsync()` 加载 OSM 全球建筑（无需资产ID）
-- `Cesium3DTileStyle` 不支持 `emissive`
 - `Cesium3DTileset.fromUrl()` 加载指定资产ID
 
 ---
