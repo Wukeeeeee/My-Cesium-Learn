@@ -48,7 +48,7 @@ GDP 柱状图可视化。
 **文件：**
 - `01-chart-entity.html` — 用 Entity Box 画柱子（带地形）
 - `02-chart-simple.html` — 简化版，无地形，柱子贴地
-- `03-chart-fast.html` — Primitive Instancing 性能优化（34根柱子→1次draw call）
+- `03-chart-fast.html` — Primitive Instancing 性能优化（34根柱子合并成1次draw call）
 - `04-test.html` — 练习文件
 
 **学到什么：**
@@ -79,20 +79,18 @@ GDP 柱状图可视化。
 
 ### 05-3d-tiles
 
-OSM 全球建筑白膜加载 + CustomShader 发光效果。
+OSM 建筑白膜 + CustomShader 发光。踩了 `Cesium3DTileStyle` 不支持 emissive 的坑，后来用 CustomShader 才真正发光。
 
 **文件：**
 - `01-osm-buildings-nyc.html` — 加载 OSM 全球建筑，飞到纽约
-- `02-osm-buildings-style-test.html` — 飞广州，测试 Cesium3DTileStyle
-- `glow.html` — CustomShader 建筑发光 + 夜景氛围
-- `cesium-building-glow-ref.md` — 掘金文章参考
+- `02-osm-buildings-style-test.html` — 飞广州，测试 Cesium3DTileStyle（emissive 无效）
+- `glow.html` — CustomShader 建筑发光 + 夜景
 
 **学到什么：**
-- `createOsmBuildingsAsync()` 加载 OSM 全球建筑（无需资产ID）
-- `Cesium3DTileStyle` 不支持 `emissive`，要用 `CustomShader` ✅
-- `CustomShader` + `material.emissive` 实现建筑自发光
+- `createOsmBuildingsAsync()` 加载 OSM 全球建筑，不用资产 ID
+- `Cesium3DTileStyle` 不支持 `emissive`，得用 `CustomShader` 才有用
+- `material.emissive` 在着色器里设橘色发光
 - 夜景氛围：关太阳 + 深色背景 + 关光照
-- `Cesium3DTileset.fromUrl()` 加载指定资产ID
 
 ---
 
