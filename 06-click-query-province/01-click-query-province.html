@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- 引入 CesiumJS 核心库和 CSS 样式（必须） -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.137/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+</head>
+<body>
+  <!-- Cesium 地图容器——所有 3D 内容都渲染到这个 div 里 -->
+  <div id="cesiumContainer"></div>
+
+  <!-- type="module" 表示这是 ES Module，可以用 import/await 等现代语法 -->
+  <script type="module">
+    // ============================================================
+    // 第一步：读取 API Key（本地文件，不上传到 GitHub）
+    // ============================================================
+    // fetch('文件名') 从服务器读取文件，返回 Response 对象
+    // .text() 把 Response 转成文本字符串
+    // .trim() 去掉字符串两头的换行和空格
+    const res = await fetch('apikey.txt');
+    Cesium.Ion.defaultAccessToken = (await res.text()).trim();
+
+    // ============================================================
+    // 第二步：创建 Cesium 3D 地球（Viewer）
+    // ============================================================
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrain: Cesium.Terrain.fromWorldTerrain(),  // 加载全球地形（山脉起伏）
+      //bug — 关了图层选择器，但原因忘了，以后再说
+      baseLayerPicker: false,
+    });
+
+    // ============================================================
+    // 第三步：加载省份数据和南海九段线
+    // ============================================================
+    // 把 ds 定义在 try 外面，这样点击事件里也能访问到它
+    // （如果在 try 里面用 let 定义，外面就访问不到了）
+    let ds;
+
+    try {
+      // ----- 加载中国省份边界数据 -----
+      const chinaProvince = await fetch('china-province.geojson');
+      const chinaProvinceJson = await chinaProvince.json();
+
+      // 删除旧版 GeoJSON 自带的 CRS 声明
+      // 如果不删，Cesium 会报 "Unknown crs name" 错误
+      delete chinaProvinceJson.crs;
+
+      // 用 GeoJsonDataSource 把 GeoJSON 数据加载到地球
+      ds = await Cesium.GeoJsonDataSource.load(chinaProvinceJson, {
+        stroke: Cesium.Color.YELLOW,              // 边界线颜色：黄色
+        strokeWidth: 20,                          // 边界线粗细：20 像素（很粗）
+        fill: Cesium.Color.WHITE.withAlpha(0.01), // 填充颜色：白色，几乎透明（0.01 = 1% 透明度）
+        //椭球面上绘制 — 让边界线贴在地球椭球表面，不跟着地形起伏
+        clampToGround: false,
+      });
+
+      // 把省份数据添加到场景中
+      viewer.dataSources.add(ds);
+
+      // ----- 加载南海九段线（国境线）-----
+      const southsea = await fetch('southsea.geojson');
+      const southseaJson = await southsea.json();
+
+      // 同样要删 CRS，否则会报错
+      delete southseaJson.crs;
+
+      const ss = await Cesium.GeoJsonDataSource.load(southseaJson, {
+        stroke: Cesium.Color.RED,   // 国境线用红色突出显示
+        strokeWidth: 5,             // 线宽 5 像素
+      });
+      viewer.dataSources.add(ss);
+
+    } catch (error) {
+      // 如果 fetch 或加载过程中出错，在控制台打印错误信息
+      console.error('加载中国省份数据失败:', error);
+    }
+
+    // ============================================================
+    // 第四步：注册鼠标点击事件——点击地图检测在哪个省份
+    // ============================================================
+
+    // 注意：这里可以直接用 viewer.screenSpaceEventHandler 设置监听
+    // 不需要自己 new ScreenSpaceEventHandler，Viewer 自带
+
+    // 也补一种写法给你参考（不用的话注释掉也无所谓）：
+    // const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+    // setInputAction(回调函数, 事件类型) — 注册事件监听
+    viewer.screenSpaceEventHandler.setInputAction((movement) => {
+
+      // ============================================================
+      // 4.1 获取点击位置的坐标（屏幕坐标 → 笛卡尔坐标 → 经纬度）
+      // ============================================================
+
+      // movement.position 是鼠标点击位置的屏幕像素坐标（x, y）
+      // 注意：屏幕坐标的原点在左上角，x 向右，y 向下
+      const position = movement.position;
+      //点击位置的屏幕坐标（调试用，可以在浏览器控制台看）
+      console.log(position);
+
+      // pickEllipsoid 把屏幕坐标转成地球上的 3D 笛卡尔坐标 (x, y, z)
+      // 如果点击位置不在球体上（比如点到天上），返回 undefined
+      const positionCartesian = viewer.camera.pickEllipsoid(position);
+      console.log(positionCartesian);
+
+      // 如果没点到球体上，直接退出，不往下执行
+      if (!positionCartesian) {
+        console.log('点击位置不在椭球面上');
+        return;
+      }
+
+      // Cartographic.fromCartesian 把笛卡尔坐标转成弧度制经纬度
+      // Cartographic = { longitude: 弧度经度, latitude: 弧度纬度, height: 高度 }
+      const carto = Cesium.Cartographic.fromCartesian(positionCartesian);
+      console.log(carto);
+
+      // Math.toDegrees 把弧度转成我们熟悉的角度（度）
+      // 比如：1.57 弧度 → 90 度
+      const longitudeDegrees = Cesium.Math.toDegrees(carto.longitude);
+      const latitudeDegrees = Cesium.Math.toDegrees(carto.latitude);
+
+      // ============================================================
+      // 4.2 遍历所有省份，判断点击位置在哪个省份内
+      // ============================================================
+
+      // 先检查 ds 有没有加载成功（如果 try 里出错了，ds 还是 undefined）
+      if (ds) {
+
+        // ds.entities.values 返回所有省份实体（一个省就是一个 entity）
+        // for...of 循环依次检查每个省
+        for (const entity of ds.entities.values) {
+
+          // 只检查有多边形的省份实体
+          // 有的实体可能是点、线、标签，没有 polygon 属性，跳过
+          if (!entity.polygon) continue;
+
+          // 提取这个省份多边形的所有顶点坐标
+          // polygon.hierarchy.getValue() 返回 PolygonHierarchy 对象
+          // .positions 是顶点数组，每个顶点是 Cartesian3 类型
+          const positions = entity.polygon.hierarchy.getValue().positions;
+
+          // 把 Cartesian3 数组转成 [经度, 纬度] 的二维数组
+          // 这样 point-in-polygon 函数才能处理
+          const lonLatArray = positionsToLonLat(positions);
+
+          // ============================================================
+          // 4.3 用射线法判断点是否在多边形内部
+          // ============================================================
+          // 原理：从点击位置向右发一条水平射线，统计与多边形边的交点数量
+          //       奇数 → 在多边形内部    偶数 → 在多边形外部
+          // ============================================================
+          if (IspointinPolygon(longitudeDegrees, latitudeDegrees, lonLatArray)) {
+            // 如果在内部，获取省份名称并打印到控制台
+            // entity.properties.name 是 GeoJSON 里 properties.name 的值
+            // .getValue() 是 Cesium 属性系统取值的方法
+            // 如果取不到就 fallback 到 entity.name
+            const name = entity.properties.name?.getValue() || entity.name;
+            console.log(name, '点击位置在省份内部');
+          }
+        }
+      } else {
+        console.log('ds 未加载');
+      }
+
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);  // LEFT_CLICK = 鼠标左键单击
+
+    // ============================================================
+    // 第五步：工具函数
+    // ============================================================
+
+    /**
+     * 射线法判断点是否在多边形内部（Point-in-Polygon）
+     *
+     * 算法原理（Ray Casting Algorithm）：
+     *   从目标点 (lon, lat) 向右发一条水平射线（y = lat），
+     *   统计这条射线与多边形所有边的交点个数。
+     *   - 奇数个交点 → 点在多边形内部
+     *   - 偶数个交点 → 点在多边形外部
+     *
+     * 为什么能这样判断？
+     *   因为多边形是一个封闭区域。每穿过一条边，就从"内部"翻转到"外部"，
+     *   或从"外部"翻转到"内部"。所以穿过奇数条边最终在"内部"。
+     *
+     * @param {number} lon - 点击位置的经度
+     * @param {number} lat - 点击位置的纬度
+     * @param {Array} polygon - 多边形的顶点数组 [[lon, lat], [lon, lat], ...]
+     * @returns {boolean} true = 点在多边形内部
+     */
+    function IspointinPolygon(lon, lat, polygon) {
+      let inside = false;
+
+      // 遍历多边形的每一条边（线段）
+      // i 从 0 到 polygon.length-1，j 始终是 i 的上一个顶点
+      // 这样 polygon[0] 和 polygon[polygon.length-1] 之间的边也能检查到
+      // 初始 j = polygon.length - 1（最后一个顶点），i = 0（第一个顶点）
+      // 这样第一轮检查的是最后一条边（最后一个顶点→第一个顶点）
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i][0], yi = polygon[i][1];  // 当前顶点的 (经度, 纬度)
+        const xj = polygon[j][0], yj = polygon[j][1];  // 上一个顶点的 (经度, 纬度)
+
+        // ---- 判断射线是否可能穿过这条边 ----
+        // 条件：这条边的两个端点，一个在射线（y=lat）上方，一个在下方
+        // 如果两个端点都在射线同一侧，射线不可能穿过这条边，直接跳过
+        const latcross = (yi > lat) !== (yj > lat);
+
+        if (latcross) {
+          // ---- 计算射线与这条边的交点 x 坐标 ----
+          // 实际上的水平射线就是 y = lat
+          // 用相似三角形求交点的 x 坐标：
+          //
+          //   (xj, yj) ---- 交点在两点之间
+          //       \          ↑
+          //        \        |
+          //         \      |  (lat - yi)
+          //          \    |
+          //           \  |
+          //            \(xi, yi)
+          //
+          // 交点 x = xi + (xj - xi) * (lat - yi) / (yj - yi)
+          const crossX = (xj - xi) * (lat - yi) / (yj - yi) + xi;
+
+          // ---- 判断交点是否在点击位置的右侧 ----
+          // 射线是从点击位置向右发射的
+          // 如果交点在右侧（crossX > lon），说明射线确实穿过了这条边
+          // 每穿过一次，inside 翻转一次
+          if (crossX > lon) {
+            inside = !inside;
+          }
+        }
+      }
+      return inside;
+    }
+
+    /**
+     * 将 Cesium 的 Cartesian3 数组转换为 [经度, 纬度] 数组
+     *
+     * 为什么要转？
+     *   Cesium 用的 Cartesian3 是三维坐标 (x, y, z)
+     *   但 point-in-polygon 算法需要二维经纬度
+     *   所以我们把每个顶点从 Cartesian3 → Cartographic（弧度）→ [度, 度]
+     *
+     * @param {Array} positions - Cartesian3 顶点数组
+     * @returns {Array} [[lon, lat], [lon, lat], ...] 经纬度二维数组
+     */
+    function positionsToLonLat(positions) {
+      // .map 遍历数组，每个元素转一下，返回新数组
+      return positions.map(pos => {
+        // ① Cartesian3 → Cartographic（弧度制）
+        const carto = Cesium.Cartographic.fromCartesian(pos);
+        // ② 弧度 → 度，返回 [经度, 纬度]
+        return [Cesium.Math.toDegrees(carto.longitude), Cesium.Math.toDegrees(carto.latitude)];
+      });
+    }
+
+    // ============================================================
+    // 第六步：场景美化设置
+    // ============================================================
+
+    // 开启光照效果——让地形有明暗变化，看起来更立体
+    viewer.scene.globe.enableLighting = true;
+    // 添加太阳（光照源，配合 enableLighting 使用）
+    viewer.scene.sun = new Cesium.Sun();
+
+    // 在左上角显示 FPS（帧率），用来观察性能
+    // FPS 越高越流畅，60 及格，30 以下就卡了
+    viewer.scene.debugShowFramesPerSecond = true;
+
+    // ============================================================
+    // 总结：这个页面做了什么？
+    // ============================================================
+    // 1. 加载中国省份边界（黄色粗线）和南海九段线（红色细线）
+    // 2. 点击地图 → 自动检测你点在了哪个省份
+    // 3. 结果输出到浏览器控制台（按 F12 打开）
+    // 4. 核心算法：射线法判断点在多边形内
+    //
+    // 扩展思路：
+    //   - 可以改成点击省份 → 弹出信息框显示省份信息
+    //   - 可以改成点击高亮省份（改变颜色）
+    //   - 可以结合 GDP 数据 → 点击显示该省 GDP
+    // ============================================================
+  </script>
+</body>
+</html>

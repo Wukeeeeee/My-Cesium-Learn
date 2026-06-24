@@ -91,6 +91,25 @@ OSM 全球建筑白膜加载。
 
 ---
 
+### 06-click-query-province
+
+点击地图检测省份（鼠标交互 + 射线法判断点在多边形内）。
+
+**文件：**
+- `01-click-query-province.html` — 加载省界 + 南海九段线，点击自动识别省份
+- `china-province.geojson` — 中国34个省级行政区边界数据
+- `southsea.geojson` — 南海九段线数据
+
+**学到什么：**
+- `ScreenSpaceEventHandler.setInputAction()` 注册鼠标点击事件
+- `camera.pickEllipsoid()` 屏幕坐标 → 笛卡尔坐标
+- `Cartographic.fromCartesian()` 笛卡尔坐标 → 弧度制经纬度
+- `Math.toDegrees()` 弧度转角度
+- **射线法（Ray Casting）** 判断点在多边形内部
+- 遍历 `ds.entities.values` 查找点击位置所在的省份
+
+---
+
 ## 启动方式
 
 ```bash

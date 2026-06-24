@@ -320,3 +320,56 @@ viewer.camera.flyTo({
 - `Cesium3DTileStyle` 不支持 `emissive`，不报错但完全没效果
 - `createOsmBuildingsAsync()` 包围盒是全球，`flyTo(tileset)` 相机不会动，要手动指定坐标
 
+
+---
+
+## 06-click-query-province — 点击省份查询（鼠标交互 + 射线法判点）
+
+**位置：** `E:/my_repo/MyCesium/06-click-query-province/`
+**文件：** `01-click-query-province.html`、`china-province.geojson`、`southsea.geojson`
+
+加载中国省份边界 + 南海九段线，**点击地图自动检测点在哪个省份内**。核心算法是射线法（Ray Casting）。
+
+### 坐标转换流程
+
+```
+屏幕坐标 (Pixel)            // {x, y} 像素
+    ↓ camera.pickEllipsoid()
+笛卡尔坐标 (Cartesian3)      // {x, y, z} 地球3D坐标
+    ↓ Cartographic.fromCartesian()
+地理坐标 (Cartographic)      // 弧度制经纬度
+    ↓ Math.toDegrees()
+经纬度 (度)                  // 113.27, 23.13
+```
+
+### 四种 Pick 方式
+
+- `scene.pick(pos)` — 返回鼠标下的物体
+- `scene.drillPick(pos)` — 返回鼠标下所有物体
+- `scene.pickPosition(pos)` — 返回地形表面的3D坐标
+- `camera.pickEllipsoid(pos)` — 返回椭球表面坐标（最快）
+
+### 射线法关键代码
+
+```js
+function IspointinPolygon(lon, lat, polygon) {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0], yi = polygon[i][1];
+    const xj = polygon[j][0], yj = polygon[j][1];
+    const latcross = (yi > lat) !== (yj > lat);  // 一个在上一个在下
+    if (latcross) {
+      const crossX = (xj - xi) * (lat - yi) / (yj - yi) + xi;
+      if (crossX > lon) inside = !inside;
+    }
+  }
+  return inside;
+}
+```
+
+### 踩坑
+
+- `movement.position` 只是像素坐标，不能直接当经纬度用
+- `Cartographic.fromCartesian()` 拿到的是弧度，要转度
+- `camera.pickEllipsoid()` 不考虑地形高度
+- 大范围 Polygon 放大消失 bug → 加 `depthTestAgainstTerrain = true`
